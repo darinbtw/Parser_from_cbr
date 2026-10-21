@@ -1,16 +1,23 @@
 import requests
 from datetime import date
 
-try:
-    answer = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
-except ValueError as e:
-     print(e)
-
-data = answer.json()
+URL = "https://www.cbr-xml-daily.ru/daily_json.js"
 valutes = ['USD', 'EUR', 'CNY']
 
-for i in valutes:
-    valute = (f'{i} -> {data['Valute'][i]['Value']}')
-    print(valute)
+try:
+    answer = requests.get(URL, timeout=10)
+    answer.raise_for_status()
+    data = answer.json()
+
     with open('prices.txt', 'a', encoding='utf-8') as f:
-        f.write(f'{date.today()} {valute} {'\n'}')
+        for code in valutes:
+            value = data["Valute"][code]["Value"]
+            line = f"{date.today()} {code} -> {value}"
+            print(line)
+            f.write(line + "\n")
+
+except requests.exceptions.RequestException as e:
+    print(f"Не удалось получить данные: {e}")
+except KeyError as e:
+    print(f"В ответе нет нужной валюты или поля: {e}")
+    
